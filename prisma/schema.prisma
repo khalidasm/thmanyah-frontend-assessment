@@ -1,0 +1,105 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Podcast {
+  id                     String         @id @default(cuid())
+  collectionId           Int            @unique
+  trackId                Int            @unique
+  artistName             String?
+  collectionName         String
+  trackName              String
+  collectionViewUrl      String?
+  feedUrl                String?
+  artworkUrl30           String?
+  artworkUrl60           String?
+  artworkUrl100          String?
+  artworkUrl600          String?
+  releaseDate            DateTime?
+  trackTimeMillis        Int?
+  country                String?
+  currency               String?
+  primaryGenreName       String?
+  contentAdvisoryRating  String?
+  artworkUrl30_2x        String?
+  artworkUrl60_2x        String?
+  artworkUrl100_2x       String?
+  artworkUrl600_2x       String?
+  artistViewUrl          String?
+  trackCensoredName      String?
+  collectionCensoredName String?
+  artistId               Int?
+  collectionPrice        Float?
+  trackPrice             Float?
+  collectionHdPrice      Float?
+  trackHdPrice           Float?
+  trackHdRentalPrice     Float?
+  collectionExplicitness String?
+  trackExplicitness      String?
+  trackCount             Int?
+  copyright              String?
+  description            String?
+  shortDescription       String?
+  longDescription        String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  searchHistoryId        String?
+  episodes               Episode[]
+  searchHistory          SearchHistory? @relation(fields: [searchHistoryId], references: [id])
+  genres                 Genre[]        @relation("GenreToPodcast")
+
+  @@map("podcasts")
+}
+
+model Genre {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  podcasts  Podcast[] @relation("GenreToPodcast")
+
+  @@map("genres")
+}
+
+model Episode {
+  id              String    @id @default(cuid())
+  podcastId       String
+  title           String
+  description     String?
+  duration        Int?
+  pubDate         DateTime?
+  guid            String?   @unique
+  enclosureUrl    String?
+  enclosureType   String?
+  enclosureLength Int?
+  itunesDuration  String?
+  itunesExplicit  Boolean?
+  itunesImage     String?
+  itunesOrder     Int?
+  itunesSubtitle  String?
+  itunesSummary   String?
+  itunesKeywords  String?
+  itunesAuthor    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  podcast         Podcast   @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  @@map("episodes")
+}
+
+model SearchHistory {
+  id          String    @id @default(cuid())
+  term        String    @unique
+  resultCount Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  podcasts    Podcast[]
+
+  @@map("search_history")
+}
