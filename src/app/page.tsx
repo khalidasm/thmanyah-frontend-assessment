@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic';
+export const revalidate = 2592000;
 import { Suspense } from "react";
 import { LoadingSpinner } from "@/components/common";
 import { SearchClient } from "@/components/search";
@@ -10,7 +10,9 @@ async function getTrendingData() {
                 process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
             }/api/podcasts/search`,
             {
-                cache: "no-store",
+                next: {
+                    revalidate
+                },
             }
         );
 

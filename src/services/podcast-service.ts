@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated';
+import { PrismaClient } from '@prisma/client';
 import { 
   iTunesPodcastResult, 
   EpisodeData, 
@@ -28,15 +28,11 @@ export class PodcastService {
     this.prisma = new PrismaClient();
   }
 
-  /**
-   * Save top podcasts to database
-   */
   async saveTopPodcasts(
     term: string, 
     podcasts: iTunesPodcastResult[]
   ): Promise<PodcastServiceResponse> {
     try {
-      // Create or update search history
       const searchHistory = await this.prisma.searchHistory.upsert({
         where: { term },
         update: {
@@ -60,9 +56,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Save search results to database
-   */
   async saveSearchResults(
     term: string, 
     podcasts: iTunesPodcastResult[]
@@ -70,7 +63,6 @@ export class PodcastService {
     try {
       const sanitizedTerm = ValidationUtils.sanitizeSearchTerm(term);
       
-      // Create or update search history
       const searchHistory = await this.prisma.searchHistory.upsert({
         where: { term: sanitizedTerm },
         update: {
@@ -94,9 +86,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Save podcasts to database with search history relationship
-   */
   private async savePodcastsToDatabase(
     podcasts: iTunesPodcastResult[], 
     searchHistoryId: string
@@ -105,13 +94,11 @@ export class PodcastService {
 
     for (const podcast of podcasts) {
       try {
-        // Check if podcast already exists
         const existingPodcast = await this.prisma.podcast.findUnique({
           where: { collectionId: podcast.collectionId }
         });
 
         if (existingPodcast) {
-          // Update the search history relationship if needed
           if (existingPodcast.searchHistoryId !== searchHistoryId) {
             await this.prisma.podcast.update({
               where: { id: existingPodcast.id },
@@ -122,13 +109,10 @@ export class PodcastService {
           continue;
         }
 
-        // Create or connect genres
         const genreConnections = await this.handleGenres(podcast.genres);
 
-        // Parse release date
         const releaseDate = podcast.releaseDate ? new Date(podcast.releaseDate) : null;
 
-        // Save podcast with search history relationship
         const savedPodcast = await this.prisma.podcast.create({
           data: {
             collectionId: podcast.collectionId,
@@ -188,9 +172,6 @@ export class PodcastService {
     return savedPodcasts;
   }
 
-  /**
-   * Save episodes to database for a podcast
-   */
   private async saveEpisodesToDatabase(
     episodes: EpisodeData[], 
     podcastId: string
@@ -199,7 +180,6 @@ export class PodcastService {
 
     for (const episodeData of episodes) {
       try {
-        // Check if episode already exists by guid
         if (episodeData.guid) {
           const existingEpisode = await this.prisma.episode.findFirst({
             where: { guid: episodeData.guid }
@@ -211,7 +191,6 @@ export class PodcastService {
           }
         }
 
-        // Create new episode
         const savedEpisode = await this.prisma.episode.create({
           data: {
             podcastId,
@@ -243,9 +222,6 @@ export class PodcastService {
     return savedEpisodes;
   }
 
-  /**
-   * Fetch and save episodes for a podcast
-   */
   async fetchAndSavePodcastEpisodes(podcastId: string, feedUrl: string): Promise<DatabaseEpisode[]> {
     try {
       const episodes = await this.fetchPodcastEpisodes(feedUrl);
@@ -256,12 +232,8 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Fetch episodes from RSS feed
-   */
   async fetchPodcastEpisodes(feedUrl: string): Promise<EpisodeData[]> {
     try {
-      // Check if RSS fetching is enabled
       if (!RSS_CONFIG.enabled) {
         console.log('RSS fetching is disabled in configuration');
         return [];
@@ -284,14 +256,13 @@ export class PodcastService {
             'Referer': new URL(feedUrl).origin,
           },
           maxRedirects: 5,
-          validateStatus: (status) => status < 500, // Accept 4xx errors to handle them gracefully
+          validateStatus: (status) => status < 500,
         });
       }, RSS_CONFIG.maxRetries, RSS_CONFIG.retryDelay);
 
       const xmlText = response.data;
       const episodes: EpisodeData[] = [];
 
-      // Simple XML parsing for RSS feeds
       const itemMatches = xmlText.match(/<item[^>]*>([\s\S]*?)<\/item>/gi);
       
       if (itemMatches) {
@@ -309,7 +280,6 @@ export class PodcastService {
 
       return episodes;
     } catch (error: unknown) {
-      // Handle specific error cases
       const axiosError = error as { response?: { status?: number }; code?: string; message?: string };
       if (axiosError.response?.status === 403) {
         console.warn(`Access forbidden (403) for RSS feed: ${feedUrl}. This feed may require authentication or have strict access controls.`);
@@ -324,9 +294,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Parse episode data from RSS XML
-   */
   private parseEpisodeFromRSS(itemXml: string): EpisodeData | null {
     try {
       const getTextContent = (tag: string): string | undefined => {
@@ -342,7 +309,6 @@ export class PodcastService {
       const rawTitle = getTextContent('title');
       if (!rawTitle) return null;
 
-      // Clean XML content
       const title = StringUtils.cleanXmlContent(rawTitle);
       const description = StringUtils.cleanXmlContent(getTextContent('description') || getTextContent('summary') || '');
       const pubDateStr = getTextContent('pubDate');
@@ -354,7 +320,6 @@ export class PodcastService {
       const enclosureLengthStr = getAttribute('enclosure', 'length');
       const enclosureLength = enclosureLengthStr ? parseInt(enclosureLengthStr) : undefined;
 
-      // iTunes specific tags
       const itunesDuration = getTextContent('itunes\\:duration');
       const itunesExplicitStr = getTextContent('itunes\\:explicit');
       const itunesExplicit = itunesExplicitStr ? itunesExplicitStr.toLowerCase() === 'true' : undefined;
@@ -366,7 +331,6 @@ export class PodcastService {
       const itunesKeywords = StringUtils.cleanXmlContent(getTextContent('itunes\\:keywords') || '');
       const itunesAuthor = StringUtils.cleanXmlContent(getTextContent('itunes\\:author') || '');
 
-      // Calculate duration from itunes:duration or enclosure length
       let duration: number | undefined;
       if (itunesDuration) {
         const durationMatch = itunesDuration.match(/(\d+):(\d+):(\d+)/);
@@ -379,7 +343,7 @@ export class PodcastService {
           }
         }
       } else if (enclosureLength) {
-        duration = Math.round(enclosureLength / 1000); // Convert bytes to seconds (rough estimate)
+        duration = Math.round(enclosureLength / 1000);
       }
 
       return {
@@ -406,9 +370,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Handle genre creation and connection
-   */
   private async handleGenres(genreNames: string[]) {
     const genreConnections = [];
 
@@ -431,9 +392,6 @@ export class PodcastService {
     return genreConnections;
   }
 
-  /**
-   * Get all podcasts from database
-   */
   async getAllPodcasts(): Promise<Podcast[]> {
     try {
       const dbPodcasts = await this.prisma.podcast.findMany({
@@ -451,9 +409,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Get podcast by ID
-   */
   async getPodcastById(id: string): Promise<Podcast | null> {
     try {
       const dbPodcast = await this.prisma.podcast.findUnique({
@@ -470,9 +425,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Search podcasts in database
-   */
   async searchPodcasts(query: string): Promise<Podcast[]> {
     try {
       const dbPodcasts = await this.prisma.podcast.findMany({
@@ -497,9 +449,6 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Get search history
-   */
   async getSearchHistory(): Promise<SearchHistory[]> {
     try {
       const dbSearchHistory = await this.prisma.searchHistory.findMany({
@@ -521,13 +470,9 @@ export class PodcastService {
     }
   }
 
-  /**
-   * Disconnect from database
-   */
   async disconnect(): Promise<void> {
     await this.prisma.$disconnect();
   }
 }
 
-// Export singleton instance
 export const podcastService = new PodcastService(); 

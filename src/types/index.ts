@@ -1,4 +1,3 @@
-// API Response Types
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -20,7 +19,6 @@ export interface SearchApiResponse {
   topEpisodes?: Episode[];
 }
 
-// iTunes API Types
 export interface iTunesPodcastResult {
   collectionId: number;
   trackId: number;
@@ -67,7 +65,6 @@ export interface iTunesApiResponse {
   results: iTunesPodcastResult[];
 }
 
-// Frontend Types (for API responses)
 export interface Podcast {
   id: string;
   collectionId: number;
@@ -135,7 +132,6 @@ export interface EpisodeData {
   itunesAuthor?: string;
 }
 
-// Search Types
 export interface SearchHistory {
   id: string;
   term: string;
@@ -145,7 +141,6 @@ export interface SearchHistory {
   updatedAt: Date;
 }
 
-// Frontend Types
 export interface SearchResult {
   message: string;
   source: 'itunes';
@@ -160,7 +155,6 @@ export interface SearchResult {
   topEpisodes?: Episode[];
 }
 
-// Configuration Types
 export interface AppConfig {
   country: string;
   defaultLimit: number;
@@ -169,7 +163,7 @@ export interface AppConfig {
   maxEpisodesPerPodcast: number;
 }
 
-// Error Types
+
 export interface AppError {
   code: string;
   message: string;
@@ -177,7 +171,6 @@ export interface AppError {
   timestamp: Date;
 }
 
-// Service Response Types
 export interface ServiceResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -189,5 +182,4 @@ export interface PodcastServiceResponse {
   savedPodcasts: Podcast[];
 }
 
-// Re-export database types
 export * from './database'; 

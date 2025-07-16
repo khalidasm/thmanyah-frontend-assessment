@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npx prisma generate && npm run db:push && npm start"
+startCommand = "npx prisma generate --schema=./prisma/schema.prisma && npm run db:push && npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure" 

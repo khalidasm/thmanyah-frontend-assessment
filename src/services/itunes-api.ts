@@ -26,14 +26,10 @@ export class iTunesApiService {
     });
   }
 
-  /**
-   * Search for podcasts using iTunes API
-   */
   async searchPodcasts(
     term: string
   ): Promise<ServiceResponse<iTunesApiResponse>> {
     try {
-      // Validate inputs
       if (!ValidationUtils.isValidSearchTerm(term)) {
         return {
           success: false,
@@ -66,9 +62,6 @@ export class iTunesApiService {
     }
   }
 
-  /**
-   * Get top podcasts for a specific country
-   */
   async getTopPodcasts(): Promise<ServiceResponse<iTunesApiResponse>> {
     try {
 
@@ -76,7 +69,6 @@ export class iTunesApiService {
         return this.client.get(ITUNES_API_CONFIG.searchEndpoint, {
           params: {
             media: 'podcast',
-            // Remove country, entity, and limit to match direct iTunes API behavior
           },
         });
       });
@@ -95,9 +87,6 @@ export class iTunesApiService {
     }
   }
 
-  /**
-   * Get trending podcasts for a specific country
-   */
   async getTrendingPodcasts(): Promise<ServiceResponse<iTunesApiResponse>> {
     try {
 
@@ -106,7 +95,6 @@ export class iTunesApiService {
           params: {
             media: 'podcast',
             attribute: 'ratingIndex',
-            // Remove country, entity, and limit to match direct iTunes API behavior
           },
         });
       });
@@ -125,9 +113,6 @@ export class iTunesApiService {
     }
   }
 
-  /**
-   * Get podcast details by collection ID
-   */
   async getPodcastById(
     collectionId: number
   ): Promise<ServiceResponse<iTunesApiResponse>> {
@@ -162,19 +147,14 @@ export class iTunesApiService {
     }
   }
 
-  /**
-   * Try multiple search terms to find podcasts
-   */
   async searchWithFallback(
     primaryTerm: string
   ): Promise<ServiceResponse<iTunesApiResponse>> {
-    // Try primary term first
     const primaryResult = await this.searchPodcasts(primaryTerm);
     if (primaryResult.success && primaryResult.data && primaryResult.data.resultCount > 0) {
       return primaryResult;
     }
 
-    // Try fallback terms
     for (const fallbackTerm of SEARCH_CONFIG.fallbackTerms) {
       const fallbackResult = await this.searchPodcasts(fallbackTerm);
       if (fallbackResult.success && fallbackResult.data && fallbackResult.data.resultCount > 0) {
@@ -182,15 +162,10 @@ export class iTunesApiService {
       }
     }
 
-    // Try trending podcasts as last resort
     return await this.getTrendingPodcasts();
   }
 
-  /**
-   * Get podcasts with multiple fallback strategies
-   */
   async getPodcastsWithFallback(): Promise<ServiceResponse<iTunesApiResponse>> {
-    // Try popular search terms to get top podcasts
     const popularTerms = ['podcast', 'news', 'technology', 'business', 'entertainment', 'comedy', 'true crime'];
     
     for (const term of popularTerms) {
@@ -200,21 +175,14 @@ export class iTunesApiService {
       }
     }
 
-    // Since we removed country-specific behavior, we don't need the US fallback anymore
-    // The API will return global results by default
-
     return {
       success: false,
       error: AppErrorHandler.createError('NO_RESULTS', 'No podcasts found with any strategy'),
     };
   }
 
-  /**
-   * Get top episodes
-   */
   async getTopEpisodes(): Promise<ServiceResponse<iTunesApiResponse>> {
     try {
-      // Try to get episodes by searching for popular podcast terms
       const popularTerms = ['podcast', 'news', 'technology', 'business'];
       
       for (const term of popularTerms) {
@@ -224,7 +192,6 @@ export class iTunesApiService {
               term: term,
               media: 'podcast',
               entity: 'podcastEpisode',
-              // Remove country and limit to match direct iTunes API behavior
             },
           });
         });
@@ -252,5 +219,4 @@ export class iTunesApiService {
   }
 }
 
-// Export singleton instance
 export const itunesApi = new iTunesApiService(); 
